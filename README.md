@@ -1,4 +1,41 @@
-# Getting Started with Create React App
+# Universal Coordinate Converter
+
+A React-based web application for converting between different coordinate systems, including Latitude/Longitude, UTM, MM_UTM (Myanmar), and MGRS formats.
+
+## Features
+
+- **Multiple Coordinate Systems Support:**
+  - Latitude/Longitude (decimal degrees)
+  - UTM (Universal Transverse Mercator)
+  - MM_UTM (Myanmar UTM - 8-character format for UTM zones 46 and 47)
+  - MGRS (Military Grid Reference System)
+
+- **Smart Format Detection:** Automatically detects the input coordinate format
+- **Real-time Conversion:** Converts coordinates as you type
+- **Multiple Examples:** Pre-loaded examples for each coordinate format
+- **Responsive Design:** Works on desktop and mobile devices
+
+## Supported Coordinate Formats
+
+### Latitude/Longitude
+- Format: `latitude, longitude` (comma or tab separated)
+- Example: `40.7831, -73.9712`
+- Range: Latitude (-90 to 90), Longitude (-180 to 180)
+
+### UTM (Universal Transverse Mercator)
+- Displayed format: `Zone Hemisphere Easting Northing`
+- Example: `18N 583960.00E 4507523.00N`
+
+### MM_UTM (Myanmar UTM)
+- Format: 8 characters (2 letters + 6 digits)
+- Example: `KA123456`
+- Specific to Myanmar region (UTM zones 46 and 47)
+- Based on grid zone mapping system
+
+### MGRS (Military Grid Reference System)
+- Format: 15 characters (2 digits + 1 letter + 2 letters + 10 digits)
+- Example: `46QGJ1234567890`
+- High precision coordinate system
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
 
