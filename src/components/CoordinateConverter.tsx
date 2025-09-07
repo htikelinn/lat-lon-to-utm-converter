@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { ConversionResult } from '../types/coordinates';
 import { convertCoordinates, formatUTMCoordinates } from '../utils/coordinateConverter';
+import GoogleMap from './GoogleMap';
 import './CoordinateConverter.css';
 
 const CoordinateConverter: React.FC = () => {
   const [coordinate, setCoordinate] = useState<string>('');
   const [result, setResult] = useState<ConversionResult | null>(null);
+  const [showMap, setShowMap] = useState<boolean>(false);
+  const [mapCenter, setMapCenter] = useState<{lat: number, lng: number} | null>(null);
 
   // Convert coordinates whenever input changes
   useEffect(() => {
@@ -27,15 +30,57 @@ const CoordinateConverter: React.FC = () => {
   };
 
   const loadLatLonExample = () => {
-    setCoordinate('40.7831, -73.9712');
+    setCoordinate('16.8794118, 96.1420957');
   };
 
   const loadMMUTMExample = () => {
-    setCoordinate('KA123456');
+    setCoordinate('JU958681');
   };
 
   const loadMGRSExample = () => {
-    setCoordinate('46QGJ1234567890');
+    setCoordinate('47QJU9549568421');
+  };
+
+  // Helper function to extract lat/lon from conversion result or input
+  const getLatLonFromResult = (): {lat: number, lng: number} | null => {
+    if (!result?.isValid) return null;
+
+    // If input is already lat/lon, extract from the original input
+    if (result.inputFormat === 'LATLON') {
+      const coords = coordinate.split(/[,\t]/).map(s => parseFloat(s.trim()));
+      if (coords.length === 2 && !isNaN(coords[0]) && !isNaN(coords[1])) {
+        return { lat: coords[0], lng: coords[1] };
+      }
+    }
+
+    // For other formats, we need to convert back from MGRS
+    if (result.mgrs) {
+      try {
+        const mgrs = require('mgrs');
+        const latLonBounds = mgrs.inverse(result.mgrs.formatted);
+        // Take the center of the bounding box
+        const lat = (latLonBounds[1] + latLonBounds[3]) / 2;
+        const lng = (latLonBounds[0] + latLonBounds[2]) / 2;
+        return { lat, lng };
+      } catch (error) {
+        console.error('Error converting to lat/lon:', error);
+        return null;
+      }
+    }
+
+    return null;
+  };
+
+  const handleShowOnMap = () => {
+    const latLon = getLatLonFromResult();
+    if (latLon) {
+      setMapCenter(latLon);
+      setShowMap(true);
+    }
+  };
+
+  const handleCloseMap = () => {
+    setShowMap(false);
   };
 
   return (
@@ -55,7 +100,7 @@ const CoordinateConverter: React.FC = () => {
               type="text"
               value={coordinate}
               onChange={handleCoordinateChange}
-              placeholder="e.g., 40.7831, -73.9712 or KA123456 or 46QGJ1234567890"
+              placeholder="e.g., 16.123456, 96.123456 or JU123456 or 46QGJ1234567890"
               className="coordinate-input"
             />
             <small>Supports: Lat/Lon (comma separated), MM_UTM (8 chars), MGRS (15 chars)</small>
@@ -71,6 +116,11 @@ const CoordinateConverter: React.FC = () => {
             <button onClick={loadMGRSExample} className="example-btn">
               MGRS Example
             </button>
+            {result && result.isValid && (
+              <button onClick={handleShowOnMap} className="map-btn">
+                📍 Show on Map
+              </button>
+            )}
             <button onClick={clearInputs} className="clear-btn">
               Clear
             </button>
@@ -165,6 +215,30 @@ const CoordinateConverter: React.FC = () => {
                 <strong>Error:</strong> {result.error}
               </div>
             )}
+          </div>
+        )}
+
+        {showMap && mapCenter && result && (
+          <div className="map-section">
+            <div className="map-header">
+              <h2>Location on Map</h2>
+              <button onClick={handleCloseMap} className="close-map-btn">
+                ✕ Close Map
+              </button>
+            </div>
+            <GoogleMap
+              center={mapCenter}
+              zoom={15}
+              markers={[mapCenter]}
+              coordinateInfo={{
+                utm: result.utm ? formatUTMCoordinates(result.utm) : undefined,
+                mmUtm: result.mmUtm?.formatted,
+                mgrs: result.mgrs?.formatted,
+              }}
+            />
+            <div className="map-info">
+              <p>Click on the marker to see detailed coordinate information.</p>
+            </div>
           </div>
         )}
         

@@ -13,6 +13,7 @@ A React-based web application for converting between different coordinate system
 - **Smart Format Detection:** Automatically detects the input coordinate format
 - **Real-time Conversion:** Converts coordinates as you type
 - **Multiple Examples:** Pre-loaded examples for each coordinate format
+- **Google Maps Integration:** View coordinates on an interactive map with detailed info
 - **Responsive Design:** Works on desktop and mobile devices
 
 ## Supported Coordinate Formats
@@ -38,6 +39,32 @@ A React-based web application for converting between different coordinate system
 - High precision coordinate system
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+
+## Google Maps Setup
+
+To enable the Google Maps feature, you need to:
+
+1. **Get a Google Maps API Key:**
+   - Go to [Google Cloud Console](https://console.cloud.google.com/)
+   - Create a new project or select an existing one
+   - Enable the "Maps JavaScript API"
+   - Create credentials (API Key)
+   - Restrict the API key to your domain for security
+
+2. **Configure the API Key:**
+   ```bash
+   # Copy the environment example file
+   cp .env.example .env
+   
+   # Edit .env and replace with your actual API key
+   REACT_APP_GOOGLE_MAPS_API_KEY=your_actual_api_key_here
+   ```
+
+3. **Features:**
+   - Click "📍 Show on Map" button after entering coordinates
+   - Interactive map with satellite/hybrid view
+   - Click markers to see detailed coordinate information
+   - Automatic centering and zooming to location
 
 ## Available Scripts
 
