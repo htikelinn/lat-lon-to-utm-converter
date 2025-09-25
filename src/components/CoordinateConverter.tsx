@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { ConversionResult } from "../types/coordinates";
 import { convertCoordinates, formatUTMCoordinates } from "../utils/coordinateConverter";
-import GoogleMap from "./Map";
+import Map from "./Map";
 import "./CoordinateConverter.css";
 
 const CoordinateConverter: React.FC = () => {
@@ -142,7 +142,7 @@ const CoordinateConverter: React.FC = () => {
 
                                 <div className="results-grid">
                                     {/* UTM Section */}
-                                    <div className="format-section">
+                                    {/* <div className="format-section">
                                         <h3>UTM (WGS84)</h3>
                                         <div className="result-grid">
                                             <div className="result-item">
@@ -168,7 +168,7 @@ const CoordinateConverter: React.FC = () => {
                                         <div className="formatted-result">
                                             <strong>{formatUTMCoordinates(result.utm)}</strong>
                                         </div>
-                                    </div>
+                                    </div> */}
 
                                     {/* MM_UTM Section */}
                                     {result.mmUtm && (
@@ -199,9 +199,37 @@ const CoordinateConverter: React.FC = () => {
                                             </div>
                                         </div>
                                     )}
+                                    {/* Lattitude and Longitude Section */}
+                                    {/* <div className="format-section">
+                                        <h3>Lat/Lon</h3>
+                                        <div className="result-grid">
+                                            <div className="result-item">
+                                                <span className="label">Zone:</span>
+                                                <span className="value">
+                                                    {result.utm.zone}
+                                                    {result.utm.hemisphere}
+                                                </span>
+                                            </div>
+                                            <div className="result-item">
+                                                <span className="label">Easting:</span>
+                                                <span className="value">
+                                                    {result.utm.easting.toLocaleString()} m
+                                                </span>
+                                            </div>
+                                            <div className="result-item">
+                                                <span className="label">Northing:</span>
+                                                <span className="value">
+                                                    {result.utm.northing.toLocaleString()} m
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <div className="formatted-result">
+                                            <strong>{formatUTMCoordinates(result.utm)}</strong>
+                                        </div>
+                                    </div> */}
 
                                     {/* MGRS Section */}
-                                    {result.mgrs && (
+                                    {/* {result.mgrs && (
                                         <div className="format-section">
                                             <h3>MGRS</h3>
                                             <div className="result-grid">
@@ -229,7 +257,7 @@ const CoordinateConverter: React.FC = () => {
                                                 <strong>{result.mgrs.formatted}</strong>
                                             </div>
                                         </div>
-                                    )}
+                                    )} */}
                                 </div>
                             </div>
                         ) : (
@@ -248,7 +276,7 @@ const CoordinateConverter: React.FC = () => {
                                 ✕ Close Map
                             </button>
                         </div>
-                        <GoogleMap
+                        <Map
                             center={mapCenter}
                             zoom={15}
                             markers={[mapCenter]}
