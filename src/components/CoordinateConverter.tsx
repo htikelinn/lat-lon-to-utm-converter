@@ -1,8 +1,18 @@
 import React, { useState, useEffect } from "react";
+// Assuming you've updated the ConversionResult interface in types/coordinates
 import { ConversionResult } from "../types/coordinates";
-import { convertCoordinates, formatUTMCoordinates } from "../utils/coordinateConverter";
+import { convertCoordinates, formatUTMCoordinates } from "../utils/coordinateConverter"; // formatUTMCoordinates removed
 import Map from "./Map";
 import "./CoordinateConverter.css";
+
+// Helper function to format MM_UTM to 12-character format (2 letters + 5 Easting + 5 Northing)
+const formatMMUTM12Char = (mmUtm: ConversionResult["mmUtm"]) => {
+    if (!mmUtm) return "";
+    // Pads easting and northing (which are strings from the conversion result) to 5 digits with leading zeros
+    const easting = String(mmUtm.easting).padStart(5, "0");
+    const northing = String(mmUtm.northing).padStart(5, "0");
+    return `${mmUtm.gridZone}${easting}${northing}`;
+};
 
 const CoordinateConverter: React.FC = () => {
     const [coordinate, setCoordinate] = useState<string>("");
@@ -34,40 +44,19 @@ const CoordinateConverter: React.FC = () => {
     };
 
     const loadMMUTMExample = () => {
-        setCoordinate("JU958681");
+        // Example for 12-character format (2 letters + 5 easting + 5 northing)
+        setCoordinate("JU9549568421");
     };
 
     const loadMGRSExample = () => {
         setCoordinate("47QJU9549568421");
     };
 
-    // Helper function to extract lat/lon from conversion result or input
+    // Helper function to extract lat/lon from conversion result
     const getLatLonFromResult = (): { lat: number; lng: number } | null => {
-        if (!result?.isValid) return null;
-
-        // If input is already lat/lon, extract from the original input
-        if (result.inputFormat === "LATLON") {
-            const coords = coordinate.split(/[,\t]/).map((s) => parseFloat(s.trim()));
-            if (coords.length === 2 && !isNaN(coords[0]) && !isNaN(coords[1])) {
-                return { lat: coords[0], lng: coords[1] };
-            }
+        if (result?.isValid && result.latLon) {
+            return { lat: result.latLon.latitude, lng: result.latLon.longitude };
         }
-
-        // For other formats, we need to convert back from MGRS
-        if (result.mgrs) {
-            try {
-                const mgrs = require("mgrs");
-                const latLonBounds = mgrs.inverse(result.mgrs.formatted);
-                // Take the center of the bounding box
-                const lat = (latLonBounds[1] + latLonBounds[3]) / 2;
-                const lng = (latLonBounds[0] + latLonBounds[2]) / 2;
-                return { lat, lng };
-            } catch (error) {
-                console.error("Error converting to lat/lon:", error);
-                return null;
-            }
-        }
-
         return null;
     };
 
@@ -83,13 +72,21 @@ const CoordinateConverter: React.FC = () => {
         setShowMap(false);
     };
 
+    // Prepare Lat/Lon result for display
+    const latLonResult = result?.latLon
+        ? `${result.latLon.latitude.toFixed(7)}, ${result.latLon.longitude.toFixed(7)}`
+        : null;
+
     return (
         <div className="coordinate-converter">
             <div className="converter-card">
-                <h1>Universal Coordinate Converter</h1>
+                <h1>
+                    LAT/LON &lt;--&gt; UTM Converter
+                </h1>
+
                 <p className="description">
-                    Enter coordinates in any supported format: Lat/Lon, MM_UTM (Myanmar), or MGRS.
-                    The system will automatically detect and convert between all formats.
+                    Enter coordinates in any supported format: Lat/Lon, MM_UTM (Myanmar). The system
+                    will automatically detect and convert between all formats.
                 </p>
 
                 <div className="input-section">
@@ -100,11 +97,12 @@ const CoordinateConverter: React.FC = () => {
                             type="text"
                             value={coordinate}
                             onChange={handleCoordinateChange}
-                            placeholder="e.g., 16.123456, 96.123456 or JU123456 or 46QGJ1234567890"
+                            // Updated placeholder
+                            placeholder="e.g., 16.123456, 96.123456 or JU1234567890" // or 46QGJ1234567890"
                             className="coordinate-input"
                         />
                         <small>
-                            Supports: Lat/Lon (comma separated), MM_UTM (8 chars), MGRS (15 chars)
+                            Supports: Lat/Lon (comma separated), MM_UTM (၁၀ လုံးမြေပုံညွှန်း)
                         </small>
                     </div>
 
@@ -115,9 +113,9 @@ const CoordinateConverter: React.FC = () => {
                         <button onClick={loadMMUTMExample} className="example-btn">
                             MM_UTM Example
                         </button>
-                        <button onClick={loadMGRSExample} className="example-btn">
-                            MGRS Example
-                        </button>
+                        {/* <button onClick={loadMGRSExample} className="example-btn">
+                             MGRS Example
+                        </button> */}
                         {result && result.isValid && (
                             <button onClick={handleShowOnMap} className="map-btn">
                                 📍 Show on Map
@@ -141,39 +139,34 @@ const CoordinateConverter: React.FC = () => {
                                 )}
 
                                 <div className="results-grid">
-                                    {/* UTM Section */}
-                                    {/* <div className="format-section">
-                                        <h3>UTM (WGS84)</h3>
-                                        <div className="result-grid">
-                                            <div className="result-item">
-                                                <span className="label">Zone:</span>
-                                                <span className="value">
-                                                    {result.utm.zone}
-                                                    {result.utm.hemisphere}
-                                                </span>
+                                    {/* Lattitude and Longitude Section - ONLY SHOW */}
+                                    {result.latLon && (
+                                        <div className="format-section">
+                                            <h3>Lat/Lon</h3>
+                                            <div className="result-grid">
+                                                <div className="result-item">
+                                                    <span className="label">Latitude:</span>
+                                                    <span className="value">
+                                                        {result.latLon.latitude.toFixed(7)}
+                                                    </span>
+                                                </div>
+                                                <div className="result-item">
+                                                    <span className="label">Longitude:</span>
+                                                    <span className="value">
+                                                        {result.latLon.longitude.toFixed(7)}
+                                                    </span>
+                                                </div>
                                             </div>
-                                            <div className="result-item">
-                                                <span className="label">Easting:</span>
-                                                <span className="value">
-                                                    {result.utm.easting.toLocaleString()} m
-                                                </span>
-                                            </div>
-                                            <div className="result-item">
-                                                <span className="label">Northing:</span>
-                                                <span className="value">
-                                                    {result.utm.northing.toLocaleString()} m
-                                                </span>
+                                            <div className="formatted-result">
+                                                <strong>{latLonResult}</strong>
                                             </div>
                                         </div>
-                                        <div className="formatted-result">
-                                            <strong>{formatUTMCoordinates(result.utm)}</strong>
-                                        </div>
-                                    </div> */}
+                                    )}
 
-                                    {/* MM_UTM Section */}
+                                    {/* MM_UTM Section - ONLY SHOW */}
                                     {result.mmUtm && (
                                         <div className="format-section">
-                                            <h3>MM_UTM (Myanmar)</h3>
+                                            <h3>MM_UTM</h3>
                                             <div className="result-grid">
                                                 <div className="result-item">
                                                     <span className="label">Grid Zone:</span>
@@ -182,82 +175,33 @@ const CoordinateConverter: React.FC = () => {
                                                     </span>
                                                 </div>
                                                 <div className="result-item">
-                                                    <span className="label">Easting:</span>
+                                                    <span className="label">
+                                                        Easting (5 Digits):
+                                                    </span>
                                                     <span className="value">
-                                                        {result.mmUtm.easting}
+                                                        {String(result.mmUtm.easting).padStart(
+                                                            5,
+                                                            "0"
+                                                        )}
                                                     </span>
                                                 </div>
                                                 <div className="result-item">
-                                                    <span className="label">Northing:</span>
+                                                    <span className="label">
+                                                        Northing (5 Digits):
+                                                    </span>
                                                     <span className="value">
-                                                        {result.mmUtm.northing}
+                                                        {String(result.mmUtm.northing).padStart(
+                                                            5,
+                                                            "0"
+                                                        )}
                                                     </span>
                                                 </div>
                                             </div>
                                             <div className="formatted-result">
-                                                <strong>{result.mmUtm.formatted}</strong>
+                                                <strong>{formatMMUTM12Char(result.mmUtm)}</strong>
                                             </div>
                                         </div>
                                     )}
-                                    {/* Lattitude and Longitude Section */}
-                                    {/* <div className="format-section">
-                                        <h3>Lat/Lon</h3>
-                                        <div className="result-grid">
-                                            <div className="result-item">
-                                                <span className="label">Zone:</span>
-                                                <span className="value">
-                                                    {result.utm.zone}
-                                                    {result.utm.hemisphere}
-                                                </span>
-                                            </div>
-                                            <div className="result-item">
-                                                <span className="label">Easting:</span>
-                                                <span className="value">
-                                                    {result.utm.easting.toLocaleString()} m
-                                                </span>
-                                            </div>
-                                            <div className="result-item">
-                                                <span className="label">Northing:</span>
-                                                <span className="value">
-                                                    {result.utm.northing.toLocaleString()} m
-                                                </span>
-                                            </div>
-                                        </div>
-                                        <div className="formatted-result">
-                                            <strong>{formatUTMCoordinates(result.utm)}</strong>
-                                        </div>
-                                    </div> */}
-
-                                    {/* MGRS Section */}
-                                    {/* {result.mgrs && (
-                                        <div className="format-section">
-                                            <h3>MGRS</h3>
-                                            <div className="result-grid">
-                                                <div className="result-item">
-                                                    <span className="label">Zone:</span>
-                                                    <span className="value">
-                                                        {result.mgrs.zone}
-                                                        {result.mgrs.latitudeBand}
-                                                    </span>
-                                                </div>
-                                                <div className="result-item">
-                                                    <span className="label">Grid Square:</span>
-                                                    <span className="value">
-                                                        {result.mgrs.gridSquare}
-                                                    </span>
-                                                </div>
-                                                <div className="result-item">
-                                                    <span className="label">Coordinates:</span>
-                                                    <span className="value">
-                                                        {result.mgrs.easting} {result.mgrs.northing}
-                                                    </span>
-                                                </div>
-                                            </div>
-                                            <div className="formatted-result">
-                                                <strong>{result.mgrs.formatted}</strong>
-                                            </div>
-                                        </div>
-                                    )} */}
                                 </div>
                             </div>
                         ) : (
@@ -282,7 +226,7 @@ const CoordinateConverter: React.FC = () => {
                             markers={[mapCenter]}
                             coordinateInfo={{
                                 utm: result.utm ? formatUTMCoordinates(result.utm) : undefined,
-                                mmUtm: result.mmUtm?.formatted,
+                                mmUtm: result.mmUtm ? formatMMUTM12Char(result.mmUtm) : undefined, // Use 12-char format for map info
                                 mgrs: result.mgrs?.formatted,
                             }}
                         />
@@ -296,34 +240,34 @@ const CoordinateConverter: React.FC = () => {
                     <h3>About Coordinate Systems</h3>
                     <div className="info-grid">
                         <div className="info-item">
-                            <h4>UTM (Universal Transverse Mercator)</h4>
+                            <h4>Lat/Lon (WGS84)</h4>
                             <ul>
-                                <li>Divides Earth into 60 zones, each 6° of longitude wide</li>
-                                <li>
-                                    Easting: distance east from zone's central meridian (meters)
-                                </li>
-                                <li>Northing: distance north from equator (meters)</li>
-                                <li>Hemisphere: N (Northern) or S (Southern)</li>
+                                <li>The standard global coordinate system.</li>
+                                <li>Latitude is North/South position (up to 90°).</li>
+                                <li>Longitude is East/West position (up to 180°).</li>
+                                <li>Format is generally Decimal Degrees (DD).</li>
                             </ul>
                         </div>
                         <div className="info-item">
                             <h4>MM_UTM (Myanmar UTM)</h4>
                             <ul>
-                                <li>8-character format specific to Myanmar region</li>
-                                <li>Works with UTM zones 46 and 47</li>
-                                <li>Format: 2 letters + 6 digits (e.g., KA123456)</li>
-                                <li>Grid zones map to specific UTM areas in Myanmar</li>
+                                <li>**12-character format** specific to Myanmar region.</li>
+                                <li>Works with UTM zones 46 and 47.</li>
+                                <li>
+                                    Format: 2 letters (Grid Zone) + 5 digits (Easting) + 5 digits
+                                    (Northing).
+                                </li>
+                                <li>Grid zones map to specific UTM areas in Myanmar.</li>
                             </ul>
                         </div>
-                        <div className="info-item">
+                        {/* <div className="info-item">
                             <h4>MGRS (Military Grid Reference System)</h4>
                             <ul>
-                                <li>15-character precise coordinate system</li>
-                                <li>Based on UTM but with additional grid squares</li>
-                                <li>Format: Zone + Band + Grid + Coordinates</li>
-                                <li>Used primarily for military and surveying applications</li>
+                                <li>Used primarily for military and surveying applications.</li>
+                                <li>Format: Zone + Band + Grid + Coordinates (up to 15 characters).</li>
+                                <li>Included for complete conversion, but not shown in main results.</li>
                             </ul>
-                        </div>
+                        </div> */}
                     </div>
                 </div>
             </div>

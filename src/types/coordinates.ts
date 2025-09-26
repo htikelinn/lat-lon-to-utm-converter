@@ -12,9 +12,9 @@ export interface UTMCoordinates {
 
 export interface MMUTMCoordinates {
   gridZone: string; // Two-letter grid zone (e.g., "KA")
-  easting: string;  // 3-digit easting
-  northing: string; // 3-digit northing
-  formatted: string; // Full 8-character format (e.g., "KA123456")
+  easting: string;  // 5-digit easting (Updated from 3-digit)
+  northing: string; // 5-digit northing (Updated from 3-digit)
+  formatted: string; // Full 12-character format (e.g., "KA1234567890") (Updated from 8-char)
 }
 
 export interface MGRSCoordinates {
@@ -32,6 +32,7 @@ export interface ConversionResult {
   utm: UTMCoordinates;
   mmUtm?: MMUTMCoordinates;
   mgrs?: MGRSCoordinates;
+  latLon?: LatLonCoordinates; // <-- ADD THIS LINE
   isValid: boolean;
   error?: string;
   inputFormat?: CoordinateFormat;
