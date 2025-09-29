@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import {
     MapContainer,
     TileLayer,
@@ -9,6 +9,7 @@ import {
     Circle,
     FeatureGroup,
     Rectangle,
+    useMap,
 } from "react-leaflet";
 
 // Ensure you import Leaflet CSS in your main CSS file or in index.js
@@ -37,8 +38,19 @@ const LeafletMapComponent: React.FC<MapProps> = ({ center, zoom, markers, coordi
         popupAnchor: [1, -34],
     });
     // const center = [51.505, -0.09]
+    const ChangeView: React.FC<{ center: { lat: number; lng: number } }> = ({ center }) => {
+        const map = useMap(); // Get the current map instance
 
-    let rangeRadius = 8000; // Default 500 meters
+        // This useEffect runs every time the 'center' prop changes
+        useEffect(() => {
+            // use setView to update the map's center and potentially the zoom
+            map.setView(center, map.getZoom());
+        }, [center, map]); // Dependencies: center (from props) and map (the instance)
+
+        // This component renders nothing, it only handles side effects (map movement)
+        return null;
+    };
+    let rangeRadius = 500; // Default 500 meters
     const myanmarBounds = L.latLngBounds(
         [9.4333, 92.1719], // SW
         [28.5478, 101.1709] // NE
@@ -58,11 +70,12 @@ const LeafletMapComponent: React.FC<MapProps> = ({ center, zoom, markers, coordi
     };
 
     return (
-        <MapContainer center={center} zoom={zoom} style={{ height: "500px", width: "100%" }} >
+        <MapContainer center={center} zoom={zoom} style={{ height: "500px", width: "100%" }}>
             {/* <TileLayer
                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                 attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
             /> */}
+            <ChangeView center={center} />{" "}
             <LayersControl position="topright">
                 <LayersControl.BaseLayer checked name="Google">
                     <TileLayer
@@ -157,7 +170,6 @@ const LeafletMapComponent: React.FC<MapProps> = ({ center, zoom, markers, coordi
                     />
                 </LayersControl.BaseLayer>
             </LayersControl>
-
             <LayersControl position="bottomright">
                 {/* <LayersControl.Overlay name="Marker with popup">
                     <Marker position={center}>
@@ -229,7 +241,6 @@ const LeafletMapComponent: React.FC<MapProps> = ({ center, zoom, markers, coordi
                     </Popup>
                 </Marker>
             ))}
-
             <FullscreenControl />
         </MapContainer>
     );

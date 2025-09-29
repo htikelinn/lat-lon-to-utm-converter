@@ -12,8 +12,8 @@ export interface UTMCoordinates {
 
 export interface MMUTMCoordinates {
   gridZone: string; // Two-letter grid zone (e.g., "KA")
-  easting: string;  // 5-digit easting (Updated from 3-digit)
-  northing: string; // 5-digit northing (Updated from 3-digit)
+  easting: string;  // 3-digit easting (Updated from 3-digit)
+  northing: string; // 3-digit northing (Updated from 3-digit)
   formatted: string; // Full 12-character format (e.g., "KA1234567890") (Updated from 8-char)
 }
 
