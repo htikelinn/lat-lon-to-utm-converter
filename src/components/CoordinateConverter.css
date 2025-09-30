@@ -79,25 +79,25 @@
 .map-btn {
     padding: 10px 20px;
     border: none;
-    border-radius: 6px;
+    border-radius: 8px;
     font-size: 14px;
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all 0.4s;
 }
 
 .example-btn {
-    background-color: #4299e1;
+    background-color: #405cb0;
     color: white;
 }
 
 .example-btn:hover {
-    background-color: #3182ce;
+    background-color: #3d39b8;
 }
 
 .clear-btn {
-    background-color: #e2e8f0;
-    color: #4a5568;
+    background-color: #da6666;
+    color: #e0e4ea;
 }
 
 .map-btn {
@@ -110,7 +110,7 @@
 }
 
 .clear-btn:hover {
-    background-color: #cbd5e0;
+    background-color: #d61912;
 }
 
 .result-section {
@@ -392,7 +392,7 @@
     font-size: 1.125rem;
     color: #1f2937;
     font-weight: 600;
-    font-family: 'Monaco', 'Consolas', monospace;
+    font-family: "Monaco", "Consolas", monospace;
 }
 
 .formatted-result {
@@ -407,7 +407,7 @@
 .formatted-result strong {
     font-size: 1.25rem;
     color: #1e40af;
-    font-family: 'Monaco', 'Consolas', monospace;
+    font-family: "Monaco", "Consolas", monospace;
 }
 
 .format-variants {
@@ -432,7 +432,7 @@
 .format-value {
     font-size: 1rem;
     color: #1f2937;
-    font-family: 'Monaco', 'Consolas', monospace;
+    font-family: "Monaco", "Consolas", monospace;
     background: #f9fafb;
     padding: 8px 12px;
     border-radius: 6px;
@@ -440,6 +440,7 @@
 }
 
 .action-buttons {
+    flex-direction: column;
     display: flex;
     gap: 12px;
 }
@@ -463,31 +464,24 @@
 }
 
 .btn-primary:hover {
-    background: #2563eb;
+    background: #08100c;
     transform: translateY(-1px);
     box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
 }
 
-/* Responsive design */
-@media (max-width: 640px) {
+@media (max-width: 768px) {
     .result-grid {
         grid-template-columns: 1fr;
         gap: 12px;
     }
-    
+
     .format-section {
         padding: 16px;
     }
-    
-    .action-buttons {
-        flex-direction: column;
-    }
-    
+
     .btn {
         justify-content: center;
     }
-}
-@media (max-width: 768px) {
     .coordinate-converter {
         padding: 12px;
     }

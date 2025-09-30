@@ -81,15 +81,15 @@ const CoordinateConverter: React.FC = () => {
     };
 
     const loadLatLonExample = () => {
-        setCoordinate("20.7779105,95.2207137");
+        setCoordinate("16.79842979158592, 96.1495942477693");
     };
 
     const loadMMUTMExample = () => {
-        setCoordinate("HT003999");
+        setCoordinate("JB921807");
     };
 
     const loadMGRSExample = () => {
-        setCoordinate("46QGJ9992500245");
+        setCoordinate("47QJE9824530378");
     };
 
     // const handleConversion = () => {
@@ -172,7 +172,7 @@ const CoordinateConverter: React.FC = () => {
 
                     <div className="button-group">
                         <button onClick={loadLatLonExample} className="example-btn">
-                            LatLon Example
+                            LatLon Example 
                         </button>
                         <button onClick={loadMMUTMExample} className="example-btn">
                             MM_UTM Example
