@@ -1,72 +1,64 @@
 import React, { useState, useEffect } from "react";
-// Assuming you've updated the ConversionResult interface in types/coordinates
 import { ConversionResult, LatLonCoordinates } from "../types/coordinates";
-import { convertCoordinates, formatUTMCoordinates } from "../utils/coordinateConverter"; // formatUTMCoordinates removed
+import {
+    convertCoordinates,
+    convertDDToDMS,
+    formatUTMCoordinates,
+} from "../utils/coordinateConverter";
 import Map from "./Map";
 import "./CoordinateConverter.css";
 
-// Helper function to format MM_UTM to 12-character format (2 letters + 5 Easting + 5 Northing)
-const formatMMUTM12Char = (mmUtm: {
+// Enhanced MM_UTM formatting helper
+const formatMMUTM = (mmUtm: {
     gridZone: string;
     easting: string;
     northing: string;
     formatted?: string;
 }) => {
-    if (!mmUtm) return "";
+    if (!mmUtm) return { full: "", short: "" };
 
-    // If original formatted string exists (e.g., user input), return it as-is
+    // Return original if exists
     if (mmUtm.formatted) {
-        return mmUtm.formatted;
+        const isShort = mmUtm.formatted.length === 8;
+        return {
+            full: isShort ? `${mmUtm.gridZone}${mmUtm.easting}${mmUtm.northing}` : mmUtm.formatted,
+            short: isShort
+                ? mmUtm.formatted
+                : `${mmUtm.gridZone}${mmUtm.easting.substring(0, 3)}${mmUtm.northing.substring(
+                      0,
+                      3
+                  )}`,
+        };
     }
 
-    // Auto-detect precision by length of easting/northing
-    if (mmUtm.easting.length === 3 && mmUtm.northing.length === 3) {
-        // ✅ 8-char style (100m precision)
-        return `${mmUtm.gridZone}${mmUtm.easting}${mmUtm.northing}`;
-    }
+    // Auto-detect precision
+    const isFullPrecision = mmUtm.easting.length === 5 && mmUtm.northing.length === 5;
 
-    if (mmUtm.easting.length === 5 && mmUtm.northing.length === 5) {
-        // ✅ 12-char style (1m precision)
-        return `${mmUtm.gridZone}${mmUtm.easting}${mmUtm.northing}`;
-    }
-
-    // Fallback: pad to 5 digits each
-    const easting = String(mmUtm.easting).padStart(5, "0");
-    const northing = String(mmUtm.northing).padStart(5, "0");
-    return `${mmUtm.gridZone}${easting}${northing}`;
+    return {
+        full: isFullPrecision
+            ? `${mmUtm.gridZone}${mmUtm.easting}${mmUtm.northing}`
+            : `${mmUtm.gridZone}${mmUtm.easting.padStart(5, "0")}${mmUtm.northing.padStart(
+                  5,
+                  "0"
+              )}`,
+        short: `${mmUtm.gridZone}${mmUtm.easting.substring(0, 3)}${mmUtm.northing.substring(0, 3)}`,
+    };
 };
-// New helper function to format MM_UTM to 8-character format (100m precision)
-const formatMMUTM8Char = (mmUtm: {
-    gridZone: string;
-    easting: string; // Expects 5 digits from conversion result
-    northing: string; // Expects 5 digits from conversion result
-}) => {
-    if (!mmUtm || mmUtm.easting.length < 3 || mmUtm.northing.length < 3) return "";
 
-    // Truncate to the first 3 digits for 100m precision
-    const easting8 = mmUtm.easting.substring(0, 3);
-    const northing8 = mmUtm.northing.substring(0, 3);
-
-    // You can add a dash here if desired, e.g., `${mmUtm.gridZone}-${easting8}${northing8}`
-    return `${mmUtm.gridZone}${easting8}${northing8}`;
-};
 const CoordinateConverter: React.FC = () => {
     const [coordinate, setCoordinate] = useState<string>("");
     const [result, setResult] = useState<ConversionResult | null>(null);
-    // const [showMap, setShowMap] = useState<boolean>(false);
-    // const [mapCenter, setMapCenter] = useState<{ lat: number; lng: number } | null>(null);
     const [selectedLocation, setSelectedLocation] = useState<LatLonCoordinates | null>(null);
     const [conversionResult, setConversionResult] = useState<ConversionResult | null>(null);
 
     useEffect(() => {
         if (conversionResult && conversionResult.isValid && conversionResult.latLon) {
-            // Automatically set the location for the map
             setSelectedLocation(conversionResult.latLon);
         } else {
-            // Clear location if conversion is invalid
             setSelectedLocation(null);
         }
     }, [conversionResult]);
+
     // Convert coordinates whenever input changes
     useEffect(() => {
         if (coordinate.trim()) {
@@ -84,64 +76,71 @@ const CoordinateConverter: React.FC = () => {
     const clearInputs = () => {
         setCoordinate("");
         setResult(null);
-        // 2. Clear the conversion results display
         setConversionResult(null);
-
-        // 3. Clear the map location (causes the map component to unmount or reset)
         setSelectedLocation(null);
     };
 
     const loadLatLonExample = () => {
-        setCoordinate("16.7980675,96.1493505");
+        setCoordinate("20.7779105,95.2207137");
     };
 
     const loadMMUTMExample = () => {
-        // Example for 12-character format (2 letters + 5 easting + 5 northing)
-        setCoordinate("JU965590");
+        setCoordinate("HT003999");
     };
 
     const loadMGRSExample = () => {
-        setCoordinate("47QJU9549568421");
+        setCoordinate("46QGJ9992500245");
     };
 
-    // Helper function to extract lat/lon from conversion result
-    const getLatLonFromResult = (): { lat: number; lng: number } | null => {
-        if (result?.isValid && result.latLon) {
-            return { lat: result.latLon.latitude, lng: result.latLon.longitude };
-        }
-        return null;
-    };
-    const handleConversion = () => {
-        if (!coordinate.trim()) {
-            setConversionResult(null);
-            // Reset map location on empty input
-            setSelectedLocation(null);
-            return;
-        }
+    // const handleConversion = () => {
+    //     if (!coordinate.trim()) {
+    //         setConversionResult(null);
+    //         setSelectedLocation(null);
+    //         return;
+    //     }
 
-        const result = convertCoordinates(coordinate);
-        setConversionResult(result);
-    };
+    //     const result = convertCoordinates(coordinate);
+    //     setConversionResult(result);
+    // };
+
     const handleShowOnMap = () => {
-        // const latLon = getLatLonFromResult();
-        // if (latLon) {
-        //     setMapCenter(latLon);
-        //     setShowMap(true);
-        // }
-        // Check if the conversion was valid and a Lat/Lon result exists
         if (result?.isValid && result.latLon) {
-            // Explicitly set the location to trigger the map update
             setSelectedLocation(result.latLon);
         }
     };
 
-    // const handleCloseMap = () => {
-    //     setShowMap(false);
+    // Prepare Lat/Lon result for display
+    // const getLatLonFromResult = (): { lat: number; lng: number } | null => {
+    //     if (!result?.isValid) return null;
+
+    //     // If input is already lat/lon, extract from the original input
+    //     if (result.inputFormat === "LATLON") {
+    //         const coords = coordinate.split(/[,\t]/).map((s) => parseFloat(s.trim()));
+    //         if (coords.length === 2 && !isNaN(coords[0]) && !isNaN(coords[1])) {
+    //             return { lat: coords[0], lng: coords[1] };
+    //         }
+    //     }
+
+    //     // For other formats, we need to convert back from MGRS
+    //     if (result.mgrs) {
+    //         try {
+    //             const mgrs = require("mgrs");
+    //             const latLonBounds = mgrs.inverse(result.mgrs.formatted);
+    //             // Take the center of the bounding box
+    //             const lat = (latLonBounds[1] + latLonBounds[3]) / 2;
+    //             const lng = (latLonBounds[0] + latLonBounds[2]) / 2;
+    //             return { lat, lng };
+    //         } catch (error) {
+    //             console.error("Error converting to lat/lon:", error);
+    //             return null;
+    //         }
+    //     }
+
+    //     return null;
     // };
 
-    // Prepare Lat/Lon result for display
     const latLonResult = result?.latLon
-        ? `${result.latLon.latitude.toFixed(7)}, ${result.latLon.longitude.toFixed(7)}`
+        ? `${result.latLon.latitude.toFixed(8)}, ${result.latLon.longitude.toFixed(8)}`
         : null;
 
     return (
@@ -162,14 +161,13 @@ const CoordinateConverter: React.FC = () => {
                             type="text"
                             value={coordinate}
                             onChange={handleCoordinateChange}
-                            // Updated placeholder
-                            placeholder="e.g., 16.123456, 96.123456 or JU1234567890 or JU123456" // or 46QGJ1234567890"
+                            placeholder="e.g., 16.123456, 96.123456 or JU1234567890 or JU123456"
                             className="coordinate-input"
                         />
                         <small>
-                            Supports: Lat/Lon (comma separated), MM_UTM (၁၀ လုံးမြေပုံညွှန်း) နှင့်
-                            (၆ လုံးမြေပုံညွှန်း)
+                            Supports: Lat/Lon (comma separated), MM_UTM (၆ လုံးမြေပုံညွှန်း)
                         </small>
+                        {/* (၁၀ လုံးမြေပုံညွှန်း) နှင့် */}
                     </div>
 
                     <div className="button-group">
@@ -179,9 +177,9 @@ const CoordinateConverter: React.FC = () => {
                         <button onClick={loadMMUTMExample} className="example-btn">
                             MM_UTM Example
                         </button>
-                        {/* <button onClick={loadMGRSExample} className="example-btn">
-                             MGRS Example
-                        </button> */}
+                        <button onClick={loadMGRSExample} className="example-btn">
+                            MGRS Example
+                        </button>
                         {result && result.isValid && (
                             <button onClick={handleShowOnMap} className="map-btn">
                                 📍 Show on Map
@@ -192,10 +190,8 @@ const CoordinateConverter: React.FC = () => {
                         </button>
                     </div>
                 </div>
+
                 <div className="map-container">
-                    {/* ⚠️ CORRECTED MAP RENDERING: This logic ensures the map only renders
-            when a location is set (either by auto-update or button click)
-            AND correctly maps 'latitude'/'longitude' to 'lat'/'lng'. */}
                     {selectedLocation && result && (
                         <>
                             <Map
@@ -203,7 +199,6 @@ const CoordinateConverter: React.FC = () => {
                                     lat: selectedLocation.latitude,
                                     lng: selectedLocation.longitude,
                                 }}
-                                // Ensure you provide required props like zoom and markers
                                 zoom={12}
                                 markers={[
                                     {
@@ -211,17 +206,14 @@ const CoordinateConverter: React.FC = () => {
                                         lng: selectedLocation.longitude,
                                     },
                                 ]}
-                                // You can pass coordinateInfo here if needed for the map
-
                                 coordinateInfo={{
                                     utm: result.utm ? formatUTMCoordinates(result.utm) : undefined,
                                     mmUtm: result.mmUtm
-                                        ? formatMMUTM12Char(result.mmUtm)
-                                        : undefined, // Use 12-char format for map info
+                                        ? formatMMUTM(result.mmUtm).full
+                                        : undefined,
                                     mgrs: result.mgrs?.formatted,
                                 }}
                             />
-                            {/* Circle info panel */}
                             <div className="map-info">
                                 <p>
                                     <strong>Legend:</strong>
@@ -245,6 +237,7 @@ const CoordinateConverter: React.FC = () => {
                         </>
                     )}
                 </div>
+
                 {result && (
                     <div className="result-section">
                         <h2>Coordinate Conversion Results</h2>
@@ -261,32 +254,87 @@ const CoordinateConverter: React.FC = () => {
                                     {result.latLon && (
                                         <div className="format-section">
                                             <h3>Lat/Lon</h3>
+
                                             <div className="result-grid">
                                                 <div className="result-item">
                                                     <span className="label">Latitude:</span>
                                                     <span className="value">
-                                                        {result.latLon.latitude.toFixed(7)}
+                                                        {result.latLon.latitude.toFixed(8)}
                                                     </span>
                                                 </div>
                                                 <div className="result-item">
                                                     <span className="label">Longitude:</span>
                                                     <span className="value">
-                                                        {result.latLon.longitude.toFixed(7)}
+                                                        {result.latLon.longitude.toFixed(8)}
                                                     </span>
                                                 </div>
                                             </div>
+
+                                                    <span className="format-label">
+                                                        Decimal Degrees (DD):
+                                                    </span>
                                             <div className="formatted-result">
                                                 <strong>{latLonResult}</strong>
+                                            </div>
+
+                                            <div className="format-variants">
+                                                {/* <div className="format-item">
+                                                    <span className="format-label">
+                                                        Decimal Degrees (DD):
+                                                    </span>
+                                                    <span className="format-value">
+                                                        {result.latLon.latitude.toFixed(8)},{" "}
+                                                        {result.latLon.longitude.toFixed(8)}
+                                                    </span>
+                                                </div> */}
+
+                                                <div className="format-item">
+                                                    <span className="format-label">
+                                                        DMS Format:
+                                                    </span>
+                                                    <span className="format-value">
+                                                        {convertDDToDMS(
+                                                            result.latLon.latitude,
+                                                            true
+                                                        )}{" "}
+                                                        (Lat),{" "}
+                                                        {convertDDToDMS(
+                                                            result.latLon.longitude,
+                                                            false
+                                                        )}{" "}
+                                                        (Lon)
+                                                    </span>
+                                                </div>
+                                            </div>
+
+                                            <div className="action-buttons">
+                                                <button
+                                                    className="btn btn-primary"
+                                                    onClick={() => {
+                                                        const { latitude, longitude } =
+                                                            result.latLon!;
+                                                        const url = `https://www.google.com/maps?q=${latitude},${longitude}`;
+                                                        window.open(url, "_blank");
+                                                    }}
+                                                >
+                                                    📍 Open in Google Maps
+                                                </button>
                                             </div>
                                         </div>
                                     )}
 
-                                    {/* MM_UTM Section - ONLY SHOW */}
+                                    {/* MM_UTM Section - UPDATED */}
                                     {result.mmUtm && (
                                         <div className="format-section">
-                                            <h3>MM_UTM (Myanmar UTM)</h3>
+                                            <h3> Myanmar UTM</h3>
 
                                             <div className="result-grid">
+                                                <div className="result-item">
+                                                    <span className="label">Grid Zone:</span>
+                                                    <span className="value">
+                                                        {result.mmUtm.gridZone}
+                                                    </span>
+                                                </div>
                                                 <div className="result-item">
                                                     <span className="label">Easting:</span>
                                                     <span className="value">
@@ -302,31 +350,55 @@ const CoordinateConverter: React.FC = () => {
                                             </div>
 
                                             <div className="formatted-result">
-                                                {/* Check if the result is a full 12-char conversion (1m precision) */}
-                                                {result.mmUtm.easting.length === 5 &&
-                                                result.mmUtm.northing.length === 5 ? (
-                                                    <>
-                                                        <div className="formatted-result">
-                                                            <strong>
-                                                                ၆ လုံးမြေပုံညွှန်း:{" "}
-                                                                {formatMMUTM8Char(result.mmUtm)}
-                                                            </strong>
-                                                        </div>
-                                                        <div className="formatted-result">
-                                                            <strong>
-                                                                ၁၀ လုံးမြေပုံညွှန်း:{" "}
-                                                                {formatMMUTM12Char(result.mmUtm)}
-                                                            </strong>
-                                                        </div>
-                                                    </>
-                                                ) : (
-                                                    <div className="formatted-result">
-                                                        <strong>
-                                                            ၆ လုံးမြေပုံညွှန်း:{" "}
-                                                            {formatMMUTM12Char(result.mmUtm)}
-                                                        </strong>
-                                                    </div>
-                                                )}
+                                                {/* Use the new formatMMUTM helper */}
+                                                {(() => {
+                                                    const formatted = formatMMUTM(result.mmUtm);
+                                                    return (
+                                                            <div className="formatted-result">
+                                                                <strong>
+                                                                    ၆ လုံးမြေပုံညွှန်း:{" "}
+                                                                    {formatted.short}
+                                                                </strong>
+                                                            </div>
+                                                            // <div className="formatted-result">
+                                                            //     <strong>
+                                                            //         ၁၀ လုံးမြေပုံညွှန်း:{" "}
+                                                            //         {formatted.full}
+                                                            //     </strong>
+                                                            // </div>
+                                                    );
+                                                })()}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* MGRS Section - MOVED INSIDE results-grid */}
+                                    {result.mgrs && (
+                                        <div className="format-section">
+                                            <h3>MGRS</h3>
+                                            <div className="result-grid">
+                                                <div className="result-item">
+                                                    <span className="label">Zone:</span>
+                                                    <span className="value">
+                                                        {result.mgrs.zone}
+                                                        {result.mgrs.latitudeBand}
+                                                    </span>
+                                                </div>
+                                                <div className="result-item">
+                                                    <span className="label">Grid Square:</span>
+                                                    <span className="value">
+                                                        {result.mgrs.gridSquare}
+                                                    </span>
+                                                </div>
+                                                <div className="result-item">
+                                                    <span className="label">Coordinates:</span>
+                                                    <span className="value">
+                                                        {result.mgrs.easting} {result.mgrs.northing}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                            <div className="formatted-result">
+                                                <strong>{result.mgrs.formatted}</strong>
                                             </div>
                                         </div>
                                     )}
@@ -339,30 +411,6 @@ const CoordinateConverter: React.FC = () => {
                         )}
                     </div>
                 )}
-
-                {/* {showMap && mapCenter && result && (
-                    <div className="map-section">
-                        <div className="map-header">
-                            <h2>Location on Map</h2>
-                            <button onClick={handleCloseMap} className="close-map-btn">
-                                ✕ Close Map
-                            </button>
-                        </div>
-                        <Map
-                            center={mapCenter}
-                            zoom={15}
-                            markers={[mapCenter]}
-                            coordinateInfo={{
-                                utm: result.utm ? formatUTMCoordinates(result.utm) : undefined,
-                                mmUtm: result.mmUtm ? formatMMUTM12Char(result.mmUtm) : undefined, // Use 12-char format for map info
-                                mgrs: result.mgrs?.formatted,
-                            }}
-                        />
-                        <div className="map-info">
-                            <p>Click on the marker to see detailed coordinate information.</p>
-                        </div>
-                    </div>
-                )} */}
 
                 <div className="info-section">
                     <h3>About Coordinate Systems</h3>
@@ -379,23 +427,29 @@ const CoordinateConverter: React.FC = () => {
                         <div className="info-item">
                             <h4>MM_UTM (Myanmar UTM)</h4>
                             <ul>
-                                <li>**12-character format** specific to Myanmar region.</li>
-                                <li>Works with UTM zones 46 and 47.</li>
                                 <li>
-                                    Format: 2 letters (Grid Zone) + 5 digits (Easting) + 5 digits
-                                    (Northing).
+                                    <strong>၆ လုံးမြေပုံညွှန်း</strong> - 6-digit format (100m
+                                    precision)
                                 </li>
+                                {/* <li>
+                                    <strong>၁၀ လုံးမြေပုံညွှန်း</strong> - 10-digit format (1m
+                                    precision)
+                                </li> */}
+                                <li>Works with UTM zones 46 and 47.</li>
+                                <li>Format: 2 letters (Grid Zone) + coordinates.</li>
                                 <li>Grid zones map to specific UTM areas in Myanmar.</li>
                             </ul>
                         </div>
-                        {/* <div className="info-item">
+                        <div className="info-item">
                             <h4>MGRS (Military Grid Reference System)</h4>
                             <ul>
                                 <li>Used primarily for military and surveying applications.</li>
-                                <li>Format: Zone + Band + Grid + Coordinates (up to 15 characters).</li>
-                                <li>Included for complete conversion, but not shown in main results.</li>
+                                <li>
+                                    Format: Zone + Band + Grid + Coordinates (up to 15 characters).
+                                </li>
+                                <li>Included for complete conversion capability.</li>
                             </ul>
-                        </div> */}
+                        </div>
                     </div>
                 </div>
             </div>

@@ -11,11 +11,16 @@ export interface UTMCoordinates {
 }
 
 export interface MMUTMCoordinates {
-  gridZone: string; // Two-letter grid zone (e.g., "KA")
-  easting: string;  // 3-digit easting (Updated from 3-digit)
-  northing: string; // 3-digit northing (Updated from 3-digit)
-  formatted: string; // Full 12-character format (e.g., "KA1234567890") (Updated from 8-char)
+  gridZone: string;
+  easting: string;
+  northing: string;
+  formatted: string;
+  easting3?: string;   // 3-digit version
+  northing3?: string;
+  easting5?: string;   // 5-digit version
+  northing5?: string;
 }
+
 
 export interface MGRSCoordinates {
   zone: number;
@@ -23,16 +28,16 @@ export interface MGRSCoordinates {
   gridSquare: string;
   easting: string;
   northing: string;
-  formatted: string; // Full MGRS string
+  formatted: string;
 }
 
-export type CoordinateFormat = 'LATLON' | 'UTM' | 'MM_UTM' | 'MGRS';
+export type CoordinateFormat = 'LATLON' | 'MM_UTM' | 'MGRS' | 'UTM';
 
 export interface ConversionResult {
   utm: UTMCoordinates;
+  latLon?: LatLonCoordinates;
   mmUtm?: MMUTMCoordinates;
   mgrs?: MGRSCoordinates;
-  latLon?: LatLonCoordinates; // <-- ADD THIS LINE
   isValid: boolean;
   error?: string;
   inputFormat?: CoordinateFormat;

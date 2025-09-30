@@ -93,211 +93,246 @@ const R_ZONE_46 = ['N', 'P', 'Q', 'R', 'S'];
 const MGRS_ZONE_46 = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'J', 'K', 'L', 'M', 'N', 'P', 'Q', 'R', 'S', 'T', 'U', 'V'];
 const UTM_ZONE_46 = ['L', 'M', 'N', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'J', 'K'];
 
-// coordinateConverter.ts
+function detectCoordinateFormat(input: string): CoordinateFormat {
+  const cleanInput = input.replace(/[\s-]/g, '').toUpperCase();
 
-function detectCoordinateFormat(input: string): CoordinateFormat | 'UNKNOWN' {
-  // Use clean for all regex tests
-  const clean = input.replace(/[\s-]/g, "").toUpperCase();
-
-  // Lat/Lon → "16.8794118,96.1420957"
-  // Keep using original input here to allow spaces around comma, but use a more robust regex
-  if (/^-?\s*\d+(\.\d+)?\s*,\s*-?\d+(\.\d+)?\s*$/.test(input)) {
-    return "LATLON";
-  }
-
-  // MM_UTM (8-char: KV326326 or 12-char: JU9549568421)
-  // 8-char: 2 letters + 6 digits
-  if (/^[A-Z]{2}\d{6}$/.test(clean)) {
-    return "MM_UTM";
+  // Check for MM_UTM format (8 characters: 2 letters + 6 digits)
+  if (/^[A-Z]{2}\d{6}$/.test(cleanInput)) {
+    return 'MM_UTM';
   }
 
   // 12-char: 2 letters + 10 digits
-  if (/^[A-Z]{2}\d{10}$/.test(clean)) {
+  if (/^[A-Z]{2}\d{10}$/.test(cleanInput)) {
     return "MM_UTM";
   }
-
-  // MGRS (e.g., 47QJU9549568421)
-  if (/^\d{1,2}[C-X][A-Z]{2}\d{4,10}$/.test(clean)) {
-    return "MGRS";
+  // Check for MGRS format (15 characters: 2 digits + 1 letter + 2 letters + 10 digits)
+  if (/^\d{2}[A-Z]{3}\d{10}$/.test(cleanInput)) {
+    return 'MGRS';
   }
 
-  return "UNKNOWN";
+  // Check for lat/lon format (contains comma or tab)
+  if (input.includes(',') || input.includes('\t')) {
+    return 'LATLON';
+  }
+
+  return 'LATLON'; // default
+}
+// coordinateConverter.ts
+
+// ... (Add this function near the top or with other conversion helpers)
+
+/**
+ * Converts Decimal Degrees (DD) to Degrees Minutes Seconds (DMS) format.
+ * @param dd The coordinate value in decimal degrees.
+ * @param isLat Boolean flag to determine the hemisphere/direction letter (N/S or E/W).
+ * @returns The coordinate formatted as a DMS string (e.g., "16° 46' 43.14\" N")
+ */
+export function convertDDToDMS(dd: number, isLat: boolean): string {
+  const absoluteDD = Math.abs(dd);
+  
+  const degrees = Math.floor(absoluteDD);
+  const minutesDecimal = (absoluteDD - degrees) * 60;
+  const minutes = Math.floor(minutesDecimal);
+  const seconds = (minutesDecimal - minutes) * 60;
+
+  let direction: string;
+  if (isLat) {
+    direction = dd >= 0 ? 'N' : 'S';
+  } else {
+    direction = dd >= 0 ? 'E' : 'W';
+  }
+
+  // Format the seconds to 2 decimal places for precision
+  const formattedSeconds = seconds.toFixed(2); 
+
+  return `${degrees}° ${minutes}' ${formattedSeconds}\" ${direction}`;
 }
 
+// ... (Ensure you export convertDDToDMS at the bottom if using export list)
 
 function convertMGRSToUTM(mgrsValue: string): MMUTMCoordinates {
-  // Extract grid zone letters from MGRS
-  const gridZoneLetters = mgrsValue.substring(3, 5); // e.g. "JU"
+  // Extract zone (first 2 characters after removing spaces)
+  let zone = mgrsValue.substring(3, 5);
 
-  // Detect precision by length of input
-  let easting: string;
-  let northing: string;
-
-  if (mgrsValue.length >= 15) {
-    // Full 15-char MGRS → 5-digit east/north (1-meter precision)
-    easting = mgrsValue.substring(5, 10);   // 5 digits
-    northing = mgrsValue.substring(10, 15); // 5 digits
-  } else if (mgrsValue.length >= 11) {
-    // Shorter MGRS → 3-digit east/north (100-meter precision)
-    easting = mgrsValue.substring(5, 8);    // 3 digits
-    northing = mgrsValue.substring(8, 11);  // 3 digits
-  } else {
-    throw new Error("Unsupported MGRS format: " + mgrsValue);
+  // Zone transformation for UTM 46
+  if (mgrsValue.substring(0, 2) === '46') {
+    for (let i = 0; i < MGRS_ZONE_46.length; i++) {
+      if (MGRS_ZONE_46[i] === zone[1]) {
+        zone = zone[0] + UTM_ZONE_46[i];
+        break;
+      }
+    }
   }
 
-  // Normalize east/north to fixed width (pad with leading zeros if needed)
-  const mgrsEasting = easting.padStart(easting.length, "0");
-  const mgrsNorthing = northing.padStart(northing.length, "0");
+  // Coordinate transformation logic
+  let firstCoordinate = (parseInt(mgrsValue.substring(5, 8)) + 4).toString();
+  let secondCoordinate: string;
 
-  // Build MM_UTM string (8 or 12 chars depending on precision)
-  const formatted = `${gridZoneLetters}${mgrsEasting}${mgrsNorthing}`;
+  const originalZone = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'J', 'K', 'L', 'M', 'N', 'P', 'Q', 'R', 'S', 'T', 'U', 'V'];
+  const altZone = ['B', 'C', 'D', 'E', 'F', 'G', 'H', 'J', 'K', 'L', 'M', 'N', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'A'];
+
+  if (parseInt(mgrsValue.substring(10, 13)) >= 3) {
+    secondCoordinate = (parseInt(mgrsValue.substring(10, 13)) - 3).toString();
+  } else {
+    secondCoordinate = (parseInt('1' + mgrsValue.substring(10, 13)) - 3).toString();
+    for (let i = 0; i < MGRS_ZONE_46.length; i++) {
+      if (altZone[i] === zone[1]) {
+        zone = zone[0] + originalZone[i];
+        break;
+      }
+    }
+  }
+
+  // Handle coordinate overflow for first coordinate
+  if (firstCoordinate.length > 3) {
+    firstCoordinate = firstCoordinate.substring(1);
+    for (let i = 0; i < originalZone.length; i++) {
+      if (originalZone[i] === zone[0]) {
+        zone = altZone[i] + zone[1];
+        break;
+      }
+    }
+  }
+
+  // Pad coordinates to 3 digits
+  firstCoordinate = firstCoordinate.padStart(3, '0');
+  secondCoordinate = secondCoordinate.padStart(3, '0');
+
+  const formatted = `${zone}${firstCoordinate}${secondCoordinate}`;
 
   return {
-    gridZone: gridZoneLetters,
-    easting: mgrsEasting,
-    northing: mgrsNorthing,
-    formatted,
+    gridZone: zone,
+    easting: firstCoordinate,
+    northing: secondCoordinate,
+    formatted: formatted
   };
 }
 
-
 function convertMMUTMToMGRS(mmUtm: string): string {
-  const clean = mmUtm.replace("-", "").toUpperCase(); // Remove dash if present
-  const gridZone = clean.substring(0, 2); // e.g. "JU" or "KV"
+  const gridZone = mmUtm.substring(0, 2);
+  let first3 = mmUtm.substring(2, 5);
+  let second3 = mmUtm.substring(5, 8);
 
-  let easting = "";
-  let northing = "";
+  let workingGridZone = gridZone;
+  const originalZone = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'J', 'K', 'L', 'M', 'N', 'P', 'Q', 'R', 'S', 'T', 'U', 'V'];
+  const altZone = ['B', 'C', 'D', 'E', 'F', 'G', 'H', 'J', 'K', 'L', 'M', 'N', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'A'];
 
-  // Detect format by length
-  if (clean.length === 12) {
-    // JU9549568421 → 2 letters + 10 digits
-    easting = clean.substring(2, 7);  // "95495"
-    northing = clean.substring(7, 12); // "68421"
-  } else if (clean.length === 8) {
-    // KV326326 → 2 letters + 6 digits
-    easting = clean.substring(2, 5);  // "326"
-    northing = clean.substring(5, 8); // "326"
+  // Handle first coordinate transformation
+  if (parseInt(first3) < 4) {
+    first3 = (parseInt('1' + first3) - 4).toString();
+    for (let i = 0; i < altZone.length; i++) {
+      if (altZone[i] === workingGridZone[0]) {
+        workingGridZone = originalZone[i] + workingGridZone[1];
+        break;
+      }
+    }
   } else {
-    throw new Error("Unsupported MM_UTM format: " + mmUtm);
+    first3 = (parseInt(first3) - 4).toString();
   }
 
-  let mgrsZone = "";
-  const workingGridZone = gridZone;
+  // Handle second coordinate transformation
+  if (parseInt(second3) + 3 > 999) {
+    second3 = (parseInt(second3) + 3).toString().substring(1);
+    for (let i = 0; i < originalZone.length; i++) {
+      if (originalZone[i] === workingGridZone[1]) {
+        workingGridZone = workingGridZone[0] + altZone[i];
+        break;
+      }
+    }
+  } else {
+    second3 = (parseInt(second3) + 3).toString();
+  }
 
-  // 🔹 Zone lookup (Myanmar specific)
+  // Add random padding to create 5-digit coordinates (mimicking Python behavior)
+  const randomPadding = Math.floor(Math.random() * 40) + 10; // 10-49
+  first3 = first3.padStart(3, '0') + randomPadding.toString();
+  second3 = second3.padStart(3, '0') + randomPadding.toString();
+
+  // Determine MGRS zone based on grid zone
+  let mgrsZone = '';
+
+  // For UTM 47
   if (UTM47_ZONES.includes(gridZone[0])) {
-    if (P_ZONE_47.includes(gridZone[1])) mgrsZone = "47P";
-    else if (Q_ZONE_47.includes(gridZone[1])) mgrsZone = "47Q";
-    else if (R_ZONE_47.includes(gridZone[1])) mgrsZone = "47R";
+    if (P_ZONE_47.includes(gridZone[1])) {
+      mgrsZone = '47P';
+    } else if (Q_ZONE_47.includes(gridZone[1])) {
+      mgrsZone = '47Q';
+    } else if (R_ZONE_47.includes(gridZone[1])) {
+      mgrsZone = '47R';
+    }
+  }
+
+  // For UTM 46 (with zone transformation)
+  let transformedGridZone = workingGridZone;
+  for (let i = 0; i < UTM_ZONE_46.length; i++) {
+    if (UTM_ZONE_46[i] === transformedGridZone[1]) {
+      transformedGridZone = transformedGridZone[0] + MGRS_ZONE_46[i];
+      break;
+    }
   }
 
   if (UTM46_ZONES.includes(gridZone[0])) {
-    if (P_ZONE_46.includes(gridZone[1])) mgrsZone = "46P";
-    else if (Q_ZONE_46.includes(gridZone[1])) mgrsZone = "46Q";
-    else if (R_ZONE_46.includes(gridZone[1])) mgrsZone = "46R";
+    if (P_ZONE_46.includes(transformedGridZone[1])) {
+      mgrsZone = '46P';
+    } else if (Q_ZONE_46.includes(transformedGridZone[1])) {
+      mgrsZone = '46Q';
+    } else if (R_ZONE_46.includes(transformedGridZone[1])) {
+      mgrsZone = '46R';
+    }
   }
 
-  if (!mgrsZone) {
-    throw new Error("Unable to determine MGRS zone for " + gridZone);
-  }
-
-  // ✅ Final MGRS string
-  return `${mgrsZone}${workingGridZone}${easting}${northing}`;
+  return `${mgrsZone}${transformedGridZone}${first3}${second3}`;
 }
 
-
-
-// function parseMMUTM(input: string): MMUTMCoordinates {
-//   const clean = input.replace("-", "").toUpperCase();
-
-//   const gridZone = clean.substring(0, 2);   // KV
-//   const easting = clean.substring(2, 5);    // 326
-//   const northing = clean.substring(5, 8);   // 326
-
-//   return {
-//     gridZone,
-//     easting,
-//     northing,
-//     formatted: input,   // ✅ keep the original string
-//   };
-// }
-
-
-function convertMMUTMToLatLon(mmUtm: { gridZone: string; easting: string; northing: string }) {
-  // ... (existing logic to form mgrsString and get latLonBounds)
-
-  const mgrsString = convertMMUTMToMGRS(
-    mmUtm.gridZone + mmUtm.easting + mmUtm.northing
-  );
-
-  // Convert MGRS (WGS84) to Lat/Lon bounds
-  const latLonBounds = mgrs.inverse(mgrsString);
-
-  // Calculate the center point:
-  let lat = (latLonBounds[1] + latLonBounds[3]) / 2;
-  let lon = (latLonBounds[0] + latLonBounds[2]) / 2;
-
-  // ⚠️ ACCURACY FIX: Apply the observed offset to match the requested accuracy for MM_UTM.
-  // This adjusts the WGS84 result to align with the specific reference system's datum/offset.
-  const LAT_OFFSET = 0.0028651;  // Difference observed: 17.4668693 - 17.4640042
-  const LON_OFFSET = -0.0038338; // Difference observed: 96.4788894 - 96.4827232
-
-  lat += LAT_OFFSET;
-  lon += LON_OFFSET;
-
-  return {
-    latitude: lat,
-    longitude: lon,
-  };
-}
 export function convertCoordinates(input: string): ConversionResult {
   const cleanInput = input.replace(/[\s-]/g, '').toUpperCase();
   const format = detectCoordinateFormat(cleanInput);
 
   try {
     switch (format) {
-      case "MM_UTM": {
-        // Build mmUtm object
-        const mmUtm = {
-          gridZone: cleanInput.substring(0, 2),
-          easting:
-            cleanInput.length === 12
-              ? cleanInput.substring(2, 7) // 5-digit east
-              : cleanInput.substring(2, 5), // 3-digit east
-          northing:
-            cleanInput.length === 12
-              ? cleanInput.substring(7, 12) // 5-digit north
-              : cleanInput.substring(5, 8), // 3-digit north
-          formatted: input.trim(), // ✅ preserve original user input
+      case 'MM_UTM': {
+        // Convert MM_UTM to MGRS first, then to lat/lon
+        const mgrsValue = convertMMUTMToMGRS(cleanInput);
+        const latLonBounds = mgrs.inverse(mgrsValue);
+        // Take the center of the bounding box
+        const latLon: LatLonCoordinates = {
+          latitude: (latLonBounds[1] + latLonBounds[3]) / 2,
+          longitude: (latLonBounds[0] + latLonBounds[2]) / 2,
         };
-
-        // Also compute Lat/Lon from MM_UTM
-        const latLon = convertMMUTMToLatLon(mmUtm);
+        //  const latLon = [(latLonBounds[1] + latLonBounds[3]) / 2, (latLonBounds[0] + latLonBounds[2]) / 2];
         const utmResult = convertLatLonToUTM(latLon);
+        const mmUtmResult = convertMGRSToUTM(mgrsValue);
 
         return {
-          utm: utmResult.utm,
-          mmUtm,
-          latLon,
-          isValid: true,
-          inputFormat: "MM_UTM",
+          ...utmResult,
+          mmUtm: mmUtmResult,
+          latLon: latLon,
+          mgrs: {
+            zone: parseInt(mgrsValue.substring(0, 2)),
+            latitudeBand: mgrsValue[2],
+            gridSquare: mgrsValue.substring(3, 5),
+            easting: mgrsValue.substring(5, 10),
+            northing: mgrsValue.substring(10, 15),
+            formatted: mgrsValue
+          },
+          inputFormat: 'MM_UTM'
         };
       }
-
 
       case 'MGRS': {
         const latLonBounds = mgrs.inverse(cleanInput);
         // Take the center of the bounding box
         const latLon: LatLonCoordinates = {
           latitude: (latLonBounds[1] + latLonBounds[3]) / 2,
-          longitude: (latLonBounds[0] + latLonBounds[2]) / 2
+          longitude: (latLonBounds[0] + latLonBounds[2]) / 2,
         };
+        // const latLon = [(latLonBounds[1] + latLonBounds[3]) / 2, (latLonBounds[0] + latLonBounds[2]) / 2];
         const utmResult = convertLatLonToUTM(latLon);
         const mmUtmResult = convertMGRSToUTM(cleanInput);
 
         return {
-          utm: utmResult.utm,
-          latLon: latLon, // Add LatLon result for easy access
+          ...utmResult,
+          latLon: latLon,
           mmUtm: mmUtmResult,
           mgrs: {
             zone: parseInt(cleanInput.substring(0, 2)),
@@ -307,67 +342,43 @@ export function convertCoordinates(input: string): ConversionResult {
             northing: cleanInput.substring(10, 15),
             formatted: cleanInput
           },
-          isValid: true,
           inputFormat: 'MGRS'
         };
       }
-      default:
-      case "LATLON": {
-        const coords = input.split(",").map((s) => parseFloat(s.trim()));
-        const latLon: LatLonCoordinates = { latitude: coords[0], longitude: coords[1] };
 
-        // ⚠️ REVERSE DATUM SHIFT FIX:
-        // We subtract the offsets to shift the local datum coordinate back
-        // to its WGS84 equivalent before converting to MGRS/MM_UTM.
-        const LAT_OFFSET = 0.0028651;
-        const LON_OFFSET = -0.0038338;
+      case 'LATLON':
+      default: {
+        // Handle lat/lon input (comma or tab separated)
+        const coords = input.split(/[,\t]/).map(s => parseFloat(s.trim()));
+        if (coords.length === 2 && !isNaN(coords[0]) && !isNaN(coords[1])) {
+          const utmResult = convertLatLonToUTM({ latitude: coords[0], longitude: coords[1] });
+          const latLon = { latitude: coords[0], longitude: coords[1] };
+          // Convert to MGRS and then to MM_UTM
+          const mgrsValue = mgrs.forward([coords[1], coords[0]], 5); // Note: MGRS expects [lon, lat]
+          const mmUtmResult = convertMGRSToUTM(mgrsValue);
 
-        // Apply the reverse shift
-        let correctedLat = latLon.latitude - LAT_OFFSET;
-        let correctedLon = latLon.longitude - LON_OFFSET;
+          return {
+            ...utmResult,
+            mmUtm: mmUtmResult,
+            latLon,
+            mgrs: {
+              zone: parseInt(mgrsValue.substring(0, 2)),
+              latitudeBand: mgrsValue[2],
+              gridSquare: mgrsValue.substring(3, 5),
+              easting: mgrsValue.substring(5, 10),
+              northing: mgrsValue.substring(10, 15),
+              formatted: mgrsValue
+            },
+            inputFormat: 'LATLON'
+          };
+        }
 
-        // Get UTM coordinates for other conversions (use original Lat/Lon)
-        const utmResult = convertLatLonToUTM(latLon);
-        if (!utmResult.isValid) return utmResult;
-
-        // Perform MGRS conversion on the CORRECTED Lat/Lon
-        // Note: MGRS expects [lon, lat], 5 digits for 1m
-        const mgrsValue = mgrs.forward([correctedLon, correctedLat], 5);
-
-        // Convert MGRS (1m precision) to MM_UTM
-        const mmUtmResult = convertMGRSToUTM(mgrsValue);
-
-        return {
-          utm: utmResult.utm,
-          latLon: latLon,
-          mmUtm: mmUtmResult,
-          mgrs: {
-            // ... (rest of MGRS parsing logic)
-            zone: parseInt(mgrsValue.substring(0, 2)),
-            latitudeBand: mgrsValue[2],
-            gridSquare: mgrsValue.substring(3, 5),
-            easting: mgrsValue.substring(5, 10),
-            northing: mgrsValue.substring(10, 15),
-            formatted: mgrsValue
-          },
-          isValid: true,
-          inputFormat: 'LATLON'
-        };
-      }
-        // default:
-        //       return { isValid: false, inputFormat: format, error: "Unsupported format" };
-        // } catch (e) {
-        //   return {
-        //     isValid: false,
-        //     inputFormat: format,
-        //     error: e instanceof Error ? e.message : "Unknown conversion error",
-        //   };
-        // }
         return {
           utm: { easting: 0, northing: 0, zone: 0, hemisphere: 'N' },
           isValid: false,
-          error: 'Unsupported format'
+          error: 'Invalid coordinate format'
         };
+      }
     }
   } catch (error) {
     return {
