@@ -1,17 +1,49 @@
 .coordinate-converter {
-    max-width: 800px;
+    display: flex;
+    /* max-width: 800px; */
     margin: 0 auto;
     padding: 20px;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", sans-serif;
+    gap: 16px; /* adds spacing between columns */
 }
 
-.converter-card {
+/* General column styling */
+.coordinate-converter > div {
+    overflow-y: auto;
+}
+
+/* Left column (Township list) */
+.coordinate-converter .township-list {
+    flex: 1;            /* 25% width (approx) */
+    max-width: 25%;
+    border-right: 1px solid #e6dada;
+    background-color: #f8f9fa;
+    border-radius: 10px;
+    padding: 1rem;
+}
+
+/* Middle column (Converter UI) */
+.coordinate-converter .converter-card {
+    flex: 2;            /* 50% width (approx) */
+    max-width: 100vh;
     background: white;
     border-radius: 12px;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
     padding: 32px;
     border: 1px solid #e1e5e9;
 }
+
+/* Right column (Recent list) */
+.coordinate-converter .recent-list {
+    flex: 1;            /* 25% width (approx) */
+    max-width: 25%;
+    color: rgb(241, 237, 237);
+    border-left: 1px solid #ddd;
+    background-color: #030f1c;
+    border-radius: 20px;
+    padding: 1rem;
+}
+
 
 .converter-card h1 {
     margin-top: 0;
@@ -469,6 +501,16 @@
     box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
 }
 
+.list-item {
+    margin-bottom: 8px;
+    padding: 8px;
+    background: #f8f9fa;
+    border-radius: 4px;
+    border-left: 2px solid #007bff;
+    font-size: medium;
+    cursor: pointer;
+}
+
 @media (max-width: 768px) {
     .result-grid {
         grid-template-columns: 1fr;
@@ -481,9 +523,6 @@
 
     .btn {
         justify-content: center;
-    }
-    .coordinate-converter {
-        padding: 12px;
     }
 
     .results-grid {

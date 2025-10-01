@@ -1,0 +1,32 @@
+[
+  {
+    "name": "Yangon",
+    "latitude": 16.8661,
+    "longitude": 96.1951
+  },
+  {
+    "name": "Mandalay",
+    "latitude": 21.9588,
+    "longitude": 96.0891
+  },
+  {
+    "name": "Naypyidaw",
+    "latitude": 19.7633,
+    "longitude": 96.0785
+  },
+  {
+    "name": "Bago",
+    "latitude": 17.336,
+    "longitude": 96.4797
+  },
+  {
+    "name": "Pyin Oo Lwin",
+    "latitude": 22.0329743131499, 
+    "longitude":96.47538441975588
+  },
+  {
+    "name": "Maubin",
+    "latitude": 16.72763139260381, 
+    "longitude": 95.65390818223442
+  }
+]
