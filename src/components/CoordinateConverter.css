@@ -14,7 +14,7 @@
 
 /* Left column (Township list) */
 .coordinate-converter .township-list {
-    flex: 1;            /* 25% width (approx) */
+    flex: 1; /* 25% width (approx) */
     max-width: 25%;
     border-right: 1px solid #e6dada;
     background-color: #f8f9fa;
@@ -24,7 +24,7 @@
 
 /* Middle column (Converter UI) */
 .coordinate-converter .converter-card {
-    flex: 2;            /* 50% width (approx) */
+    flex: 2; /* 50% width (approx) */
     max-width: 100vh;
     background: white;
     border-radius: 12px;
@@ -35,7 +35,7 @@
 
 /* Right column (Recent list) */
 .coordinate-converter .recent-list {
-    flex: 1;            /* 25% width (approx) */
+    flex: 1; /* 25% width (approx) */
     max-width: 25%;
     color: rgb(241, 237, 237);
     border-left: 1px solid #ddd;
@@ -43,7 +43,6 @@
     border-radius: 20px;
     padding: 1rem;
 }
-
 
 .converter-card h1 {
     margin-top: 0;
@@ -384,6 +383,48 @@
 }
 
 /* For better mobile responsiveness */
+.mobile-buttons {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+    gap: 10px;
+}
+
+.mobile-buttons button {
+    flex: 1; /* equal width buttons */
+    padding: 10px 14px;
+    font-size: 14px;
+    font-weight: 600;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+/* Specific colors for each button */
+.mobile-buttons button:first-child {
+    background-color: #2563eb; /* blue */
+    color: white;
+}
+.mobile-buttons button:first-child:hover {
+    background-color: #1d4ed8;
+}
+
+.mobile-buttons button:last-child {
+    background-color: #16a34a; /* green */
+    color: white;
+}
+.mobile-buttons button:last-child:hover {
+    background-color: #15803d;
+}
+
+/* Only show these buttons on mobile */
+@media (min-width: 768px) {
+    .mobile-buttons {
+        display: none;
+    }
+}
+
 .format-section {
     background: white;
     border-radius: 12px;
@@ -512,6 +553,41 @@
 }
 
 @media (max-width: 768px) {
+    .coordinate-converter .township-list,
+    .coordinate-converter .recent-list {
+        display: none;
+    }
+    /* Drawer style (full-screen overlay) */
+    .drawer {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        display: flex;
+        justify-content: flex-start;
+        z-index: 1000;
+    }
+
+    .drawer-content {
+        background: white;
+        width: 80%;
+        max-width: 300px;
+        height: 100%;
+        padding: 1rem;
+        overflow-y: auto;
+        box-shadow: 2px 0 5px rgba(0, 0, 0, 0.2);
+    }
+
+    .close-btn {
+        display: block;
+        margin-left: auto;
+        background: transparent;
+        border: none;
+        font-size: 1.5rem;
+        cursor: pointer;
+    }
     .result-grid {
         grid-template-columns: 1fr;
         gap: 12px;

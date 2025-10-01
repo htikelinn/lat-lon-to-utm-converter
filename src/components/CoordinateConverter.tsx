@@ -52,6 +52,8 @@ const CoordinateConverter: React.FC = () => {
     const [selectedLocation, setSelectedLocation] = useState<LatLonCoordinates | null>(null);
     const [conversionResult, setConversionResult] = useState<ConversionResult | null>(null);
     const [recentList, setRecentList] = useState<string[]>([]);
+    const [showTownships, setShowTownships] = useState(false);
+    const [showRecents, setShowRecents] = useState(false);
 
     useEffect(() => {
         if (conversionResult && conversionResult.isValid && conversionResult.latLon) {
@@ -139,6 +141,59 @@ const CoordinateConverter: React.FC = () => {
             </div>
             {/* Middle column: Converter UI */}
             <div className="w-2/4 p-4">
+                <div className="mobile-buttons md:hidden flex justify-between mb-4">
+                    <button
+                        className="px-3 py-2 bg-blue-500 text-white rounded"
+                        onClick={() => setShowTownships(true)}
+                    >
+                        📍 Townships
+                    </button>
+                    <button
+                        className="px-3 py-2 bg-green-500 text-white rounded"
+                        onClick={() => setShowRecents(true)}
+                    >
+                        🕑 Recent
+                    </button>
+                </div>
+                {showTownships && (
+                    <div className="drawer">
+                        <div className="drawer-content">
+                            <button className="close-btn" onClick={() => setShowTownships(false)}>
+                                ✖
+                            </button>
+                            <h2 className="font-bold text-lg mb-2">📍 Townships</h2>
+                            <ul className="space-y-2">
+                                {townships.map((t, idx) => (
+                                    <li key={idx} className="p-2 border-b">
+                                        <strong>{t.name}</strong>
+                                        <br />
+                                        <small>
+                                            {t.latitude.toFixed(4)}, {t.longitude.toFixed(4)}
+                                        </small>
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+                    </div>
+                )}
+                {showRecents && (
+                    <div className="drawer">
+                        <div className="drawer-content">
+                            <button className="close-btn" onClick={() => setShowRecents(false)}>
+                                ✖
+                            </button>
+                            <h2 className="font-bold text-lg mb-2">🕑 Recent</h2>
+                            <ul className="space-y-2">
+                                {recentList.map((item, idx) => (
+                                    <li key={idx} className="p-2 border-b">
+                                        {item}
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+                    </div>
+                )}
+
                 <div className="converter-card">
                     <h1>LAT/LON &lt;--&gt; UTM Converter</h1>
 
