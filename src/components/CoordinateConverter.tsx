@@ -164,11 +164,19 @@ const CoordinateConverter: React.FC = () => {
                             <h2 className="font-bold text-lg mb-2">📍 Townships</h2>
                             <ul className="space-y-2">
                                 {townships.map((t, idx) => (
-                                    <li key={idx} className="p-2 border-b">
-                                        <strong>{t.name}</strong>
-                                        <br />
+                                    <li
+                                        key={idx}
+                                        className="list-item hover:bg-gray-100 p-2 rounded"
+                                        onClick={() =>
+                                            setSelectedLocation({
+                                                latitude: t.latitude,
+                                                longitude: t.longitude,
+                                            })
+                                        }
+                                    >
+                                        <strong>{t.name}</strong> <br />
                                         <small>
-                                            {t.latitude.toFixed(4)}, {t.longitude.toFixed(4)}
+                                            {t.latitude.toFixed(7)}, {t.longitude.toFixed(7)}
                                         </small>
                                     </li>
                                 ))}
@@ -183,13 +191,28 @@ const CoordinateConverter: React.FC = () => {
                                 ✖
                             </button>
                             <h2 className="font-bold text-lg mb-2">🕑 Recent</h2>
-                            <ul className="space-y-2">
-                                {recentList.map((item, idx) => (
-                                    <li key={idx} className="p-2 border-b">
-                                        {item}
-                                    </li>
-                                ))}
-                            </ul>
+                            {recentList.length === 0 ? (
+                                <p className="text-gray-500">No recent items</p>
+                            ) : (
+                                <ul className="space-y-2">
+                                    {recentList.map((item, idx) => (
+                                        <li
+                                            key={idx}
+                                            className="cursor-pointer hover:bg-gray-100 p-2 rounded"
+                                            onClick={() => {
+                                                setCoordinate(item); // reload input
+                                                const result = convertCoordinates(item);
+                                                setResult(result); // reconvert
+                                                if (result?.latLon) {
+                                                    setSelectedLocation(result.latLon); // show on map
+                                                }
+                                            }}
+                                        >
+                                            {item}
+                                        </li>
+                                    ))}
+                                </ul>
+                            )}
                         </div>
                     </div>
                 )}
